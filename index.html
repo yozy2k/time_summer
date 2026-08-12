@@ -2,7 +2,7 @@
 <html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>40欄位時間加總器</title>
     <style>
         * {
@@ -15,88 +15,101 @@
             background-color: #f5f5f7;
             color: #333;
             padding: 15px;
-            padding-bottom: 100px; /* 留空間給底部固定欄 */
+            padding-bottom: 120px; /* 留空間給底部固定總計欄，避免遮擋 */
         }
         h1 {
             text-align: center;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
+            font-size: 1.4rem; /* 放大標題 */
+            margin-bottom: 20px;
             color: #1d1d1f;
         }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 手機雙欄排版 */
-            gap: 10px;
+        /* 改為單欄垂直排列 */
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* 拉大欄位間距，方便手指點擊 */
+            width: 100%;
         }
         .input-group {
             background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 12px 15px; /* 加大內襯托 */
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             display: flex;
             align-items: center;
+            width: 100%;
         }
         .input-group label {
-            font-size: 0.85rem;
-            color: #666;
-            width: 35px;
+            font-size: 1.2rem; /* 放大編號 */
+            color: #444;
+            width: 50px; /* 加寬編號欄 */
             font-weight: bold;
         }
         .input-group input {
             flex: 1;
-            padding: 8px;
-            font-size: 1rem;
+            padding: 12px; /* 增高輸入框，更好點選 */
+            font-size: 1.3rem; /* 放大輸入文字，外送看更清 */
             border: 1px solid #ccc;
-            border-radius: 5px;
+            border-radius: 8px;
             text-align: center;
             -webkit-appearance: none;
         }
         .input-group input:focus {
             border-color: #0071e3;
             outline: none;
+            background-color: #f0f7ff; /* 聚焦時變色提示 */
         }
-        /* 底部固定總計欄 */
+        /* 底部固定總計欄（特別加高、放大字體） */
         .total-panel {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: #0071e3;
+            background: #101010; /* 改為高對比深色背景，看得更醒目 */
             color: #fff;
-            padding: 15px;
+            padding: 20px 15px;
             text-align: center;
-            font-size: 1.1rem;
-            font-weight: bold;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+            box-shadow: 0 -3px 15px rgba(0,0,0,0.2);
             display: flex;
-            justify-content: space-around;
+            justify-content: space-between;
             align-items: center;
+            z-index: 999;
+        }
+        .total-text {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+        .total-time {
+            color: #34c759; /* 綠色高亮顯示總時間 */
+            font-size: 1.6rem;
+            margin-left: 5px;
         }
         .clear-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid #fff;
+            background: #ff3b30; /* 紅色清除按鈕，一眼看見 */
+            border: none;
             color: #fff;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 0.85rem;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
         }
         .clear-btn:active {
-            background: rgba(255,255,255,0.4);
+            background: #cc2e24;
         }
     </style>
 </head>
 <body>
 
-    <h1>⏱️ 40組時間快速加總 (MMSS)</h1>
+    <h1>⏱️ 接單時間快速加總 (MMSS)</h1>
     
-    <div class="grid-container" id="inputsContainer">
-        <!-- 由 JavaScript 自動生成 40 個欄位 -->
+    <div class="list-container" id="inputsContainer">
+        <!-- 由 JavaScript 自動生成 1 到 40 個垂直輸入框 -->
     </div>
 
     <div class="total-panel">
-        <div>總時間：<span id="totalDisplay">00分 00秒</span></div>
-        <button class="clear-btn" onclick="clearAll()">清除全部</button>
+        <div class="total-text">總計：<span class="total-time" id="totalDisplay">00分 00秒</span></div>
+        <button class="clear-btn" onclick="clearAll()">清除</button>
     </div>
 
     <script>
@@ -104,7 +117,7 @@
         const totalDisplay = document.getElementById('totalDisplay');
         const totalFields = 40;
 
-        // 動態生成 40 個輸入框
+        // 動態生成 40 個垂直輸入框
         for (let i = 1; i <= totalFields; i++) {
             const group = document.createElement('div');
             group.className = 'input-group';
@@ -129,15 +142,15 @@
             for (let input of inputs) {
                 let val = input.value;
                 
-                // 確保輸入防呆：只留下數字
+                // 防呆：只留下數字
                 val = val.replace(/\D/g, '');
                 input.value = val;
 
                 if (val.length > 0) {
-                    // 補足 4 位數，例如輸入 "5" 變成 "0005"
+                    // 補足 4 位數
                     let padded = val.padStart(4, '0');
                     
-                    // 拆分前兩位與後兩位
+                    // 拆分分秒
                     let min = parseInt(padded.substring(0, 2)) || 0;
                     let sec = parseInt(padded.substring(2, 4)) || 0;
                     
@@ -149,7 +162,6 @@
             let finalMin = Math.floor(totalSeconds / 60);
             let finalSec = totalSeconds % 60;
 
-            // 格式化顯示
             let displayMin = String(finalMin).padStart(2, '0');
             let displaySec = String(finalSec).padStart(2, '0');
 
