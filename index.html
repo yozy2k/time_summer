@@ -2,7 +2,7 @@
 <html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>40欄位時間加總器</title>
     <style>
         * {
@@ -15,40 +15,45 @@
             background-color: #f5f5f7;
             color: #333;
             padding: 15px;
-            padding-bottom: 120px; /* 留空間給底部固定總計欄，避免遮擋 */
+            padding-bottom: 145px; /* 留出空間給雙層底部面板 */
+            overflow-x: hidden; /* 防止左右晃動 */
         }
         h1 {
             text-align: center;
-            font-size: 1.4rem; /* 放大標題 */
+            font-size: 1.4rem;
             margin-bottom: 20px;
             color: #1d1d1f;
         }
-        /* 改為單欄垂直排列 */
         .list-container {
             display: flex;
             flex-direction: column;
-            gap: 12px; /* 拉大欄位間距，方便手指點擊 */
+            gap: 12px;
             width: 100%;
+            max-width: 100%;
         }
         .input-group {
             background: #fff;
-            padding: 12px 15px; /* 加大內襯托 */
+            padding: 12px 15px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             width: 100%;
         }
         .input-group label {
-            font-size: 1.2rem; /* 放大編號 */
+            font-size: 1.2rem;
             color: #444;
-            width: 50px; /* 加寬編號欄 */
+            width: 45px; /* 固定序號寬度 */
             font-weight: bold;
+            flex-shrink: 0; /* 防止序號被擠壓 */
         }
         .input-group input {
             flex: 1;
-            padding: 12px; /* 增高輸入框，更好點選 */
-            font-size: 1.3rem; /* 放大輸入文字，外送看更清 */
+            width: 100%; /* 確保填滿剩餘空間 */
+            min-width: 0; /* 關鍵：防止 input 撐破 Flex 容器 */
+            padding: 12px;
+            font-size: 1.3rem;
             border: 1px solid #ccc;
             border-radius: 8px;
             text-align: center;
@@ -57,42 +62,57 @@
         .input-group input:focus {
             border-color: #0071e3;
             outline: none;
-            background-color: #f0f7ff; /* 聚焦時變色提示 */
+            background-color: #f0f7ff;
         }
-        /* 底部固定總計欄（特別加高、放大字體） */
-        .total-panel {
+        
+        /* 底部固定雙層控制面板 */
+        .bottom-panel {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: #101010; /* 改為高對比深色背景，看得更醒目 */
+            background: #101010;
             color: #fff;
-            padding: 20px 15px;
-            text-align: center;
-            box-shadow: 0 -3px 15px rgba(0,0,0,0.2);
+            padding: 15px;
+            box-shadow: 0 -3px 15px rgba(0,0,0,0.3);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             z-index: 999;
         }
-        .total-text {
-            font-size: 1.4rem;
+        .total-row {
+            text-align: center;
+            font-size: 1.3rem;
             font-weight: bold;
         }
         .total-time {
-            color: #34c759; /* 綠色高亮顯示總時間 */
-            font-size: 1.6rem;
+            color: #34c759;
+            font-size: 1.5rem;
             margin-left: 5px;
         }
-        .clear-btn {
-            background: #ff3b30; /* 紅色清除按鈕，一眼看見 */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            flex: 1;
             border: none;
-            color: #fff;
-            padding: 10px 18px;
+            padding: 12px;
             border-radius: 8px;
             font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
+            color: #fff;
+            text-align: center;
+        }
+        .copy-btn {
+            background: #0071e3;
+        }
+        .copy-btn:active {
+            background: #005bb5;
+        }
+        .clear-btn {
+            background: #ff3b30;
         }
         .clear-btn:active {
             background: #cc2e24;
@@ -104,12 +124,17 @@
     <h1>⏱️ 接單時間快速加總 (MMSS)</h1>
     
     <div class="list-container" id="inputsContainer">
-        <!-- 由 JavaScript 自動生成 1 到 40 個垂直輸入框 -->
+        <!-- 由 JavaScript 自動生成 1 到 40 個輸入框 -->
     </div>
 
-    <div class="total-panel">
-        <div class="total-text">總計：<span class="total-time" id="totalDisplay">00分 00秒</span></div>
-        <button class="clear-btn" onclick="clearAll()">清除</button>
+    <div class="bottom-panel">
+        <div class="total-row">
+            總計：<span class="total-time" id="totalDisplay">00時 00分 00秒</span>
+        </div>
+        <div class="btn-row">
+            <button class="btn copy-btn" onclick="copyData()">複製資料</button>
+            <button class="btn clear-btn" onclick="clearAll()">清除</button>
+        </div>
     </div>
 
     <script>
@@ -117,7 +142,7 @@
         const totalDisplay = document.getElementById('totalDisplay');
         const totalFields = 40;
 
-        // 動態生成 40 個垂直輸入框
+        // 動態生成 40 個輸入框
         for (let i = 1; i <= totalFields; i++) {
             const group = document.createElement('div');
             group.className = 'input-group';
@@ -140,32 +165,56 @@
             let totalSeconds = 0;
 
             for (let input of inputs) {
-                let val = input.value;
-                
-                // 防呆：只留下數字
-                val = val.replace(/\D/g, '');
+                let val = input.value.replace(/\D/g, '');
                 input.value = val;
 
                 if (val.length > 0) {
-                    // 補足 4 位數
                     let padded = val.padStart(4, '0');
-                    
-                    // 拆分分秒
                     let min = parseInt(padded.substring(0, 2)) || 0;
                     let sec = parseInt(padded.substring(2, 4)) || 0;
-                    
                     totalSeconds += (min * 60) + sec;
                 }
             }
 
-            // 換算回最終分秒
-            let finalMin = Math.floor(totalSeconds / 60);
-            let finalSec = totalSeconds % 60;
+            let hours = Math.floor(totalSeconds / 3600);
+            let remSec = totalSeconds % 3600;
+            let minutes = Math.floor(remSec / 60);
+            let seconds = remSec % 60;
 
-            let displayMin = String(finalMin).padStart(2, '0');
-            let displaySec = String(finalSec).padStart(2, '0');
+            let displayHr = String(hours).padStart(2, '0');
+            let displayMin = String(minutes).padStart(2, '0');
+            let displaySec = String(seconds).padStart(2, '0');
 
-            totalDisplay.textContent = `${displayMin}分 ${displaySec}秒`;
+            totalDisplay.textContent = `${displayHr}時 ${displayMin}分 ${displaySec}秒`;
+        }
+
+        // 複製所有輸入的資料
+        function copyData() {
+            const inputs = container.getElementsByTagName('input');
+            let copyText = `【外送時間紀錄明細】\n總計：${totalDisplay.textContent}\n\n`;
+            let hasData = false;
+
+            for (let i = 0; i < inputs.length; i++) {
+                let val = inputs[i].value;
+                if (val.length > 0) {
+                    let padded = val.padStart(4, '0');
+                    let min = padded.substring(0, 2);
+                    let sec = padded.substring(2, 4);
+                    copyText += `第 ${i + 1} 筆：${min}分${sec}秒\n`;
+                    hasData = true;
+                }
+            }
+
+            if (!hasData) {
+                alert('目前沒有輸入任何資料可以複製喔！');
+                return;
+            }
+
+            navigator.clipboard.writeText(copyText.trim()).then(() => {
+                alert('已成功複製明細與總時間！');
+            }).catch(err => {
+                alert('複製失敗，請手動選取。');
+            });
         }
 
         // 清除按鈕功能
